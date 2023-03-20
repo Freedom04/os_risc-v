@@ -52,3 +52,84 @@ source ~/.bashrc
 
 ### 2. qemu
 
+QEMU is a generic and open source machine & userspace emulator and virtualizer.
+
+#### Prerequisites
+
+##### Required additional packages
+
+For Ubuntu LTS (and maybe other Debian based distributions), all required additional packages can be installed like this:
+
+```shell
+sudo apt-get install git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev ninja-build
+```
+
+##### Recommended additional packages
+
+For Ubuntu (and maybe other Debian based distributions), most of the recommended additional packages for maximum code coverage can be installed like this:
+
+```shell
+sudo apt-get install git-email
+sudo apt-get install libaio-dev libbluetooth-dev libcapstone-dev libbrlapi-dev libbz2-dev
+sudo apt-get install libcap-ng-dev libcurl4-gnutls-dev libgtk-3-dev
+sudo apt-get install libibverbs-dev libjpeg8-dev libncurses5-dev libnuma-dev
+sudo apt-get install librbd-dev librdmacm-dev
+sudo apt-get install libsasl2-dev libsdl2-dev libseccomp-dev libsnappy-dev libssh-dev
+sudo apt-get install libvde-dev libvdeplug-dev libvte-2.91-dev libxen-dev liblzo2-dev
+sudo apt-get install valgrind xfslibs-dev 
+```
+
+Newer versions of Debian / Ubuntu might also try these additional packages:
+
+```shell
+sudo apt-get install libnfs-dev libiscsi-dev
+```
+
+#### Getting the source code
+
+If you want the latest code, follow the development of the code, work with several versions or maybe even contribute to the code, you will need a local copy of the QEMU code repository which is managed using git.
+
+Get the code like this:
+
+```shell
+git clone git://git.qemu-project.org/qemu.git
+```
+
+The required version for the contest is 7.0.0, I downloaded the 7.0.0 version source code from the official website.
+
+#### Simple build and test
+
+QEMU supports builds in this directory (not recommended) or in an extra directory (out-of-tree builds, recommended). There can be any number of out-of-tree builds, so if you plan to make cross builds, debug and release builds, out-of-tree builds are what you need.
+
+```shell
+# Switch to the QEMU root directory.
+cd qemu
+# Prepare a native debug build.
+mkdir -p bin/debug/native
+cd bin/debug/native
+# Configure QEMU and start the build.
+../../../configure --enable-debug
+make
+# Return to the QEMU root directory.
+cd ../../..
+```
+
+**Now let's start a simple test:**
+
+```shell
+bin/debug/native/x86_64-softmmu/qemu-system-x86_64 -L pc-bios
+```
+
+This test runs the QEMU system emulation which boots a PC BIOS.
+
+#### Other building
+
+QEMU is multi-platform software intended to be buildable on all modern Linux platforms, OS-X, Win32 (via the Mingw64 toolchain) and a variety of other UNIX targets. The simple steps to build QEMU are:
+
+```shell
+mkdir build
+cd build
+../configure
+make
+```
+
