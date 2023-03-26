@@ -132,4 +132,12 @@ cd build
 ../configure
 make
 ```
+**配置环境变量**
 
+```shell
+vim ~/.bashrc
+# 在最后添加
+export PATH=/home/yuanzhen/os/qemu-7.0.0/build:$PATH
+# 保存，关闭
+source ~/.bashrc
+```
