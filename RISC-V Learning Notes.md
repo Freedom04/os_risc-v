@@ -110,6 +110,78 @@ SECTIONS定义了链接器如何组织代码和数据。在示例中，定义了
 
 以上是一个简单的riscv64-unknown-elf-gcc链接脚本示例。实际的链接脚本可能会更加复杂，具体的脚本编写需要结合具体的应用程序进行配置。
 
+**example:**
+
+```
+/* 设置输出架构为 RISC-V */
+OUTPUT_ARCH("riscv")
+
+/* 设置入口函数为 _start */
+ENTRY(_start)
+
+/* 定义内存区域 */
+MEMORY
+{
+    /* 定义一个名为 ram 的内存区域，权限为可写、可执行、不可访问、无缓存，起始地址为 0x80000000，长度为 128M */
+    ram (wxa!ri) : ORIGIN = 0x80000000, LENGTH = 128M
+}
+
+/* 定义程序头部（program headers） */
+PHDRS
+{
+    /* 定义一个名为 text 的程序头部，类型为 PT_LOAD，用于加载代码段 */
+    text PT_LOAD;
+    /* 定义一个名为 data 的程序头部，类型为 PT_LOAD，用于加载数据段 */
+    data PT_LOAD;
+    /* 定义一个名为 bss 的程序头部，类型为 PT_LOAD，用于加载 bss 段 */
+    bss  PT_LOAD;
+}
+
+/* 定义各个程序段（program sections） */
+SECTIONS
+{
+    /* 定义代码段 */
+    .text : {
+        /* 定义一个名为 _text_start 的符号（symbol），表示代码段的起始地址 */
+        PROVIDE(_text_start = .);
+        /* 将 .text.init 段和 .text 段合并到一起，表示程序的初始化代码和主程序代码 */
+        *(.text.init) *(.text .text.*)
+        /* 定义一个名为 _text_end 的符号，表示代码段的结束地址 */
+        PROVIDE(_text_end = .);
+    } > ram AT> ram :text /* 将代码段映射到 ram 区域中 */
+
+    /* 定义只读数据段 */
+    .rodata : {
+        /* 定义一个名为 _rodata_start 的符号，表示只读数据段的起始地址 */
+        PROVIDE(_rodata_start = .);
+        /* 将 .rodata 段和 .rodata.* 段合并到一起，表示程序的只读数据 */
+        *(.rodata .rodata.*)
+        /* 定义一个名为 _rodata_end 的符号，表示只读数据段的结束地址 */
+        PROVIDE(_rodata_end = .);
+    } > ram AT> ram :text /* 将只读数据段映射到 ram 区域中 */
+
+    /* 定义数据段 */
+    .data : {
+        /* 将 .sdata 段和 .sdata.* 段合并到一起，表示程序的初始化数据 */
+        . = ALIGN(4096);
+        PROVIDE(_data_start = .);
+        *(.sdata .sdata.*) *(.data .data.*)
+        PROVIDE(_data_end = .);
+    } > ram AT> ram :data /* 将数据段映射到 ram 区域中 */
+
+  .bss :{
+    PROVIDE(_bss_start = .);  // 定义 _bss_start 符号，表示 .bss 段的起始位置
+    *(.sbss .sbss.*) *(.bss .bss.*)  // 将 .sbss 和 .bss 段以及所有子段合并到 .bss 段
+    PROVIDE(_bss_end = .);  // 定义 _bss_end 符号，表示 .bss 段的结束位置
+  } >ram AT>ram :bss  // 将 .bss 段放置在 ram 内存区域的开头，按照未初始化数据段(bss)格式排列
+
+  PROVIDE(_memory_start = ORIGIN(ram));  // 定义 _memory_start 符号，表示 RAM 的起始地址
+  PROVIDE(_memory_end = ORIGIN(ram) + LENGTH(ram));  // 定义 _memory
+}
+```
+
+
+
 ## 2 qemu-system-riscv64
 
 ### 2.1 各种参数
@@ -294,3 +366,159 @@ la sp, stacks + STACK_SIZE
 5. 执行启动用户空间的一系列操作，包括初始化 `init` 进程、执行用户空间初始化脚本等。
 
 一旦 `start_kernel()` 函数执行完毕，操作系统内核就正式启动了。在 `start_kernel()` 函数执行之后，会进入到一个死循环中，等待处理中断和调度进程。
+
+## 5 Make
+
+### 5.1 Makefile
+
+Makefile 是一种自动化编译程序的工具，用于简化构建和编译代码的过程。它定义了一个名为 `Makefile` 的文件，其中包含了一系列规则和指令，用于告诉 `make` 命令如何构建和编译代码。
+
+以下是一个包含使用QEMU模拟器的RISC-V操作系统的Makefile示例：
+
+```makefile
+# RISC-V 64-bit toolchain
+CROSS_COMPILE=riscv64-unknown-elf-
+CC=$(CROSS_COMPILE)gcc
+LD=$(CROSS_COMPILE)ld
+OBJCOPY=$(CROSS_COMPILE)objcopy
+
+# Compilation flags
+CFLAGS=-march=rv64ima -mabi=lp64 -mcmodel=medany -O2 -Wall -nostartfiles -ffreestanding
+LDFLAGS=-static -nostdlib -nostartfiles -lgcc
+
+# Output files
+TARGET=my_os.elf
+IMAGE=my_os.img
+
+# Source files
+SRCS=start.S main.c
+
+# Object files
+OBJS=$(SRCS:.S=.o)
+OBJS+=$(filter %.o, $(shell $(CC) $(CFLAGS) -MMD -MF /dev/null -S $(SRCS) -o /dev/null))
+
+all: $(TARGET) $(IMAGE)
+
+$(TARGET): $(OBJS)
+	$(LD) $(LDFLAGS) -Tlinker.ld -o $@ $^
+
+$(IMAGE): $(TARGET)
+	$(OBJCOPY) -O binary $^ $@
+
+%.o: %.S
+	$(CC) $(CFLAGS) -c $< -o $@
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+clean:
+	rm -f $(OBJS) $(OBJS:.o=.d) $(TARGET) $(IMAGE)
+
+qemu: $(IMAGE)
+	qemu-system-riscv64 -nographic -machine virt -bios none -device loader,file=$(IMAGE),addr=0x80200000
+```
+
+此Makefile包括以下内容：
+
+- `CROSS_COMPILE`和`CC`变量指定使用的交叉编译器。
+- `CFLAGS`和`LDFLAGS`变量分别指定编译和链接选项。
+- `TARGET`和`IMAGE`变量分别指定生成的ELF可执行文件和二进制镜像文件的名称。
+- `SRCS`变量指定源文件列表。
+- `OBJS`变量根据源文件列表生成目标文件列表。
+- `all`目标编译所有源文件并生成目标文件和输出文件。
+- `$(TARGET)`目标使用链接器将所有目标文件链接为单个ELF可执行文件。
+- `$(IMAGE)`目标将ELF文件转换为二进制文件。
+- `%.o`规则编译所有的.S和.c文件。
+- `clean`目标删除所有生成的文件。
+- `qemu`目标使用QEMU模拟器运行生成的二进制文件。
+
+请注意，此Makefile使用了一个自定义的链接器脚本（`linker.ld`），该脚本将ELF文件的入口点设置为`start`符号。您需要根据自己的需求修改链接器脚本。
+
+**example**
+
+```makefile
+CROSS_COMPILE = riscv64-unknown-elf-  # RISC-V 交叉编译器前缀
+CFLAGS = -nostdlib -fno-builtin -march=rv64ima -mabi=lp64 -g -Wall  # 编译选项
+
+QEMU = qemu-system-riscv64  # RISC-V 虚拟机
+QFLAGS = -nographic -smp 1 -machine virt -bios none  # QEMU 启动选项
+
+GDB = ${CROSS_COMPILE}gdb  # GDB 调试器
+CC = ${CROSS_COMPILE}gcc  # C 编译器
+OBJCOPY = ${CROSS_COMPILE}objcopy  # 二进制格式转换工具
+OBJDUMP = ${CROSS_COMPILE}objdump  # 二进制反汇编工具
+
+SRCS_ASM = \
+	start.S \  # 汇编文件
+
+SRCS_C = \
+	kernel.c \  # C 文件
+
+OBJS = $(SRCS_ASM:.S=.o)  # 将汇编文件名转换为目标文件名
+OBJS += $(SRCS_C:.c=.o)  # 将 C 文件名转换为目标文件名
+
+.DEFAULT_GOAL := all  # 默认目标为 all
+all: os.elf  # 编译操作系统 ELF 文件
+
+# os.elf 依赖于 ${OBJS}
+# ${CC} ${CFLAGS} -Ttext=0x80000000 -o os.elf $^ 将目标文件链接为 ELF 文件
+# ${OBJCOPY} -O binary os.elf os.bin 将 ELF 文件转换为二进制文件
+os.elf: ${OBJS}
+	${CC} ${CFLAGS} -Ttext=0x80000000 -o os.elf $^
+	${OBJCOPY} -O binary os.elf os.bin
+
+# 编译 C 文件
+%.o : %.c
+	${CC} ${CFLAGS} -c -o $@ $<
+
+# 编译汇编文件
+%.o : %.S
+	${CC} ${CFLAGS} -c -o $@ $<
+
+# 运行操作系统
+run: all
+	@${QEMU} -M ? | grep virt >/dev/null || exit
+	@echo "Press Ctrl-A and then X to exit QEMU"
+	@echo "------------------------------------"
+	@${QEMU} ${QFLAGS} -kernel os.elf
+
+# 调试操作系统
+debug: all
+	@echo "Press Ctrl-C and then input 'quit' to exit GDB and QEMU"
+	@echo "-------------------------------------------------------"
+	@${QEMU} ${QFLAGS} -kernel os.elf -s -S &
+	@${GDB} os.elf -q -x gdbinit
+
+# 反汇编操作系统
+code: all
+	@${OBJDUMP} -S os.elf | less
+
+# 清除所有生成文件
+clean:
+	rm -rf *.o *.bin *.elf
+```
+
+### 5.2 sudo make install
+
+`sudo make install`是在Linux和其他类Unix操作系统中从源代码安装软件时常用的命令。
+
+需要注意的是，在使用`sudo make install`之前未查看安装说明或源代码可能是有风险的，因为它可能会覆盖重要的系统文件或与现有软件创建冲突。在安装来自源代码的软件时，始终建议先查看说明并小心操作。
+
+**安装在指定目录**
+
+可以在使用`sudo make install`时指定安装目录。默认情况下，`make install`会将软件安装在`/usr/local`目录中。但是，可以使用`PREFIX`变量指定不同的安装目录。
+
+以下是指定自定义安装目录时使用`sudo make install`的示例：
+
+```bash
+sudo make install PREFIX=/opt/mysoftware
+```
+
+在此示例中，软件将安装在`/opt/mysoftware`目录中，而不是默认的`/usr/local`目录中。
+
+请注意，并非所有软件都支持`PREFIX`变量。在这种情况下，您可能需要查看软件的安装说明或咨询文档，以确定如何指定自定义安装目录。
+
+
+
+
+
