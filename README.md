@@ -4,7 +4,7 @@
 
 This is the RISC-V C and C++ cross-compiler. It supports two build modes: a generic ELF/Newlib toolchain and a more sophisticated Linux-ELF/glibc toolchain.
 
-### Getting the sources
+### 1.1 Getting the sources
 
 This repository uses submodules, but submodules will fetch automatically on demand, so `--recursive` or `git submodule update --init --recursive` is not needed.
 
@@ -14,7 +14,7 @@ git clone https://github.com/riscv/riscv-gnu-toolchain
 
 **Warning: git clone takes around 6.65 GB of disk and download size**
 
-### Prerequisites
+### 1.2 Prerequisites
 
 Several standard packages are needed to build the toolchain.
 
@@ -24,7 +24,7 @@ On Ubuntu, executing the following command should suffice:
 sudo apt-get install autoconf automake autotools-dev curl python3 libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo gperf libtool patchutils bc zlib1g-dev libexpat-dev ninja-build
 ```
 
-### Installation (riscv64-unknown-elf-gcc)
+### 1.3 Installation (riscv64-unknown-elf-gcc)
 
 To build the **Newlib cross-compiler**, pick an install path (that is writeable). If you choose, say, `/opt/riscv`, then add `/opt/riscv/bin` to your `PATH`. Then, simply run the following command:
 
@@ -52,9 +52,9 @@ source ~/.bashrc
 
 QEMU is a generic and open source machine & userspace emulator and virtualizer.
 
-### Prerequisites
+### 2.1 Prerequisites
 
-#### Required additional packages
+#### 2.1.1 Required additional packages
 
 For Ubuntu LTS (and maybe other Debian based distributions), all required additional packages can be installed like this:
 
@@ -62,7 +62,7 @@ For Ubuntu LTS (and maybe other Debian based distributions), all required additi
 sudo apt-get install git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev ninja-build
 ```
 
-#### Recommended additional packages
+#### 2.1.2 Recommended additional packages
 
 For Ubuntu (and maybe other Debian based distributions), most of the recommended additional packages for maximum code coverage can be installed like this:
 
@@ -83,7 +83,7 @@ Newer versions of Debian / Ubuntu might also try these additional packages:
 sudo apt-get install libnfs-dev libiscsi-dev
 ```
 
-### Getting the source code
+### 2.2 Getting the source code
 
 If you want the latest code, follow the development of the code, work with several versions or maybe even contribute to the code, you will need a local copy of the QEMU code repository which is managed using git.
 
@@ -95,7 +95,7 @@ git clone git://git.qemu-project.org/qemu.git
 
 The required version for the contest is 7.0.0, I downloaded the 7.0.0 version source code from the official website.
 
-### Simple build and test
+### 2.3 Simple build and test
 
 QEMU supports builds in this directory (not recommended) or in an extra directory (out-of-tree builds, recommended). There can be any number of out-of-tree builds, so if you plan to make cross builds, debug and release builds, out-of-tree builds are what you need.
 
@@ -120,7 +120,7 @@ bin/debug/native/x86_64-softmmu/qemu-system-x86_64 -L pc-bios
 
 This test runs the QEMU system emulation which boots a PC BIOS.
 
-### Other building
+### 2.4 Other building
 
 QEMU is multi-platform software intended to be buildable on all modern Linux platforms, OS-X, Win32 (via the Mingw64 toolchain) and a variety of other UNIX targets. The simple steps to build QEMU are:
 
