@@ -151,6 +151,9 @@ sudo apt install git build-essential device-tree-compiler
 ### 3.2 Getting the source code && Building
 
 ```bash
+# get the source code
+git clone https://github.com/riscv/riscv-isa-sim.git
+# building
 cd riscv-isa-sim
 ./configure --prefix=$RISCV
 make -jN	# N取决于电脑CPU核心数量，用于加快编译速度 使用nproc命令查看
